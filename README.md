@@ -42,3 +42,4 @@ Kubernetes deployments are rendered from [the Helm chart](deploy/helm/rag-ingest
 See [the architecture](Docs/architecture.md) for the intended ports-and-adapters design and event flow.
 See [development-environment.md](Docs/development-environment.md) for the local Docker Desktop environment, service endpoints, and startup checks.
 See [data-storage.md](Docs/data-storage.md) for the PostgreSQL metadata schema and BGE-M3 dense/sparse Qdrant collection bootstrap.
+See [local-access-provisioning.md](Docs/local-access-provisioning.md) to create local database logins and Qdrant API keys without committing secrets.

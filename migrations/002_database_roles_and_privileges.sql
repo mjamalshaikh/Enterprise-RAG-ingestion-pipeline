@@ -107,7 +107,7 @@ GRANT EXECUTE ON FUNCTION rag.claim_outbox_events(TEXT, INTEGER) TO rag_ingestio
 GRANT EXECUTE ON FUNCTION rag.complete_outbox_event(UUID, TEXT, BOOLEAN, TEXT, TIMESTAMPTZ) TO rag_ingestion_outbox_publisher;
 
 -- Example identity binding (run outside version control with a secret value):
--- CREATE ROLE rag_worker_login LOGIN PASSWORD '<secret>' NOINHERIT;
+-- CREATE ROLE rag_worker_login LOGIN PASSWORD '<secret>' INHERIT;
 -- GRANT rag_ingestion_runtime TO rag_worker_login;
--- The application must SET ROLE rag_ingestion_runtime and SET LOCAL app.tenant_id
--- within each transaction before accessing tenant-owned tables.
+-- The application must SET LOCAL app.tenant_id within each transaction before
+-- accessing tenant-owned tables.

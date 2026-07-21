@@ -69,7 +69,7 @@ Use Qdrant prefetch plus reciprocal-rank fusion (RRF) for one hybrid request: re
 | Outbox publisher | `rag_ingestion_outbox_publisher` | Execute only the claim/complete outbox functions |
 | Retrieval API | `rag_ingestion_query_reader` | Tenant-scoped lineage and ACL reads |
 
-Do not use the PostgreSQL superuser or migration identity in an application container. Create login passwords/identity bindings outside Git, rotate them through the secret manager, and use a connection pool that resets session state after every transaction.
+Do not use the PostgreSQL superuser or migration identity in an application container. Create login passwords/identity bindings outside Git, rotate them through the secret manager, and use a connection pool that resets session state after every transaction. Runtime logins inherit their assigned group role, but each tenant-bound transaction must still set `app.tenant_id`.
 
 ### Qdrant
 

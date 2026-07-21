@@ -16,6 +16,10 @@ venv/
 !.env.local.development.example
 !.env.docker.example
 
+# Generated local credentials
+secrets/*
+!secrets/*.example
+
 # Build artifacts and IDE files
 build/
 dist/
