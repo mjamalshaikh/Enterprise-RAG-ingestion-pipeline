@@ -1,0 +1,149 @@
+name: enterprise-rag-ingestion
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-rag_ingestion}
+      POSTGRES_USER: ${POSTGRES_USER:-rag}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
+    ports: ["5432:5432"]
+    volumes: ["postgres_data:/var/lib/postgresql/data"]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  minio:
+    image: minio/minio:RELEASE.2025-09-07T16-13-09Z-cpuv1
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:?set MINIO_ROOT_USER in .env}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:?set MINIO_ROOT_PASSWORD in .env}
+    ports: ["9000:9000", "9001:9001"]
+    volumes: ["minio_data:/data"]
+
+  kafka:
+    image: apache/kafka:3.9.0
+    environment:
+      KAFKA_NODE_ID: 1
+      KAFKA_PROCESS_ROLES: broker,controller
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka:9093
+      KAFKA_LISTENERS: PLAINTEXT://:9092,CONTROLLER://:9093,PLAINTEXT_HOST://:29092
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092,PLAINTEXT_HOST://localhost:29092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+    ports: ["29092:29092"]
+    volumes: ["kafka_data:/tmp/kraft-combined-logs"]
+
+  apicurio:
+    image: apicurio/apicurio-registry:3.3.0
+    environment:
+      APICURIO_STORAGE_KIND: sql
+      APICURIO_STORAGE_SQL_KIND: postgresql
+      APICURIO_DATASOURCE_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB:-rag_ingestion}
+      APICURIO_DATASOURCE_USERNAME: ${POSTGRES_USER:-rag}
+      APICURIO_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
+    ports: ["8080:8080"]
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  qdrant:
+    image: qdrant/qdrant:v1.13.4
+    environment:
+      QDRANT__SERVICE__API_KEY: ${QDRANT_ADMIN_API_KEY:?set QDRANT_ADMIN_API_KEY in .env}
+      QDRANT__SERVICE__READ_ONLY_API_KEY: ${QDRANT_READ_ONLY_API_KEY:?set QDRANT_READ_ONLY_API_KEY in .env}
+      QDRANT__SERVICE__JWT_RBAC: "true"
+    ports: ["6333:6333", "6334:6334"]
+    volumes: ["qdrant_data:/qdrant/storage"]
+
+  bootstrap-init:
+    image: python:3.11-slim
+    working_dir: /app
+    environment:
+      RAG_POSTGRES_DSN: ${POSTGRES_DSN:-postgresql://rag:${POSTGRES_PASSWORD:-rag}@postgres:5432/${POSTGRES_DB:-rag_ingestion}}
+      RAG_KAFKA_BOOTSTRAP_SERVERS: ${KAFKA_BOOTSTRAP_SERVERS:-kafka:9092}
+      RAG_APICURIO_URL: ${APICURIO_URL:-http://apicurio:8080}
+      RAG_MINIO_ENDPOINT: ${MINIO_ENDPOINT:-minio:9000}
+      RAG_MINIO_ACCESS_KEY: ${MINIO_ROOT_USER:-minioadmin}
+      RAG_MINIO_SECRET_KEY: ${MINIO_ROOT_PASSWORD:-minioadmin}
+      RAG_MINIO_SECURE: "false"
+      RAG_QDRANT_URL: ${QDRANT_URL:-http://qdrant:6333}
+      RAG_QDRANT_API_KEY: ${QDRANT_ADMIN_API_KEY:?set QDRANT_ADMIN_API_KEY in .env}
+      RAG_OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-http://otel-collector:4318}
+      POSTGRES_DB: ${POSTGRES_DB:-rag_ingestion}
+      POSTGRES_USER: ${POSTGRES_USER:-rag}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      qdrant:
+        condition: service_started
+    volumes:
+      - ../..:/app
+    command: >
+      sh -c "apt-get update && apt-get install -y --no-install-recommends postgresql-client && pip install --no-cache-dir -e . && until pg_isready -h postgres -U $$POSTGRES_USER -d $$POSTGRES_DB; do sleep 2; done && PGPASSWORD=$$POSTGRES_PASSWORD psql -h postgres -U $$POSTGRES_USER -d $$POSTGRES_DB -f migrations/001_enterprise_rag_metadata.sql && python scripts/bootstrap_qdrant.py"
+    restart: "no"
+
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:0.120.0
+    command: ["--config=/etc/otelcol-contrib/config.yaml"]
+    volumes:
+      - ./observability/otel-collector-config.yaml:/etc/otelcol-contrib/config.yaml:ro
+    ports: ["4317:4317", "4318:4318", "8888:8888", "8889:8889"]
+    depends_on:
+      loki:
+        condition: service_started
+
+  prometheus:
+    image: prom/prometheus:v3.2.1
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.path=/prometheus
+      - --web.enable-lifecycle
+    volumes:
+      - ./observability/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+    ports: ["9090:9090"]
+    depends_on:
+      otel-collector:
+        condition: service_started
+
+  loki:
+    image: grafana/loki:3.7.0
+    command: -config.file=/etc/loki/config.yaml
+    volumes:
+      - ./observability/loki-config.yaml:/etc/loki/config.yaml:ro
+      - loki_data:/loki
+    ports: ["3100:3100"]
+
+  grafana:
+    image: grafana/grafana:11.5.2
+    environment:
+      GF_SECURITY_ADMIN_USER: ${GRAFANA_ADMIN_USER:-admin}
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:?set GRAFANA_ADMIN_PASSWORD in .env}
+      GF_USERS_ALLOW_SIGN_UP: "false"
+    volumes:
+      - ./observability/grafana/provisioning:/etc/grafana/provisioning:ro
+      - grafana_data:/var/lib/grafana
+    ports: ["3000:3000"]
+    depends_on:
+      prometheus:
+        condition: service_started
+      loki:
+        condition: service_started
+
+volumes:
+  postgres_data:
+  minio_data:
+  kafka_data:
+  qdrant_data:
+  prometheus_data:
+  loki_data:
+  grafana_data:

@@ -1,0 +1,5 @@
+This chart deploys one RAG ingestion worker stage: {{ .Values.worker.name }}.
+
+Create the Secret {{ .Values.runtimeSecretName }} before installation. It must contain the RAG_ credentials required by the selected infrastructure adapters.
+
+The worker module must be implemented before deployment. This chart intentionally does not provide a synthetic health probe; add a real worker health contract with the worker implementation.

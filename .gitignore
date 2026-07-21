@@ -1,0 +1,28 @@
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Virtual environments and local configuration
+.venv/
+venv/
+.env
+.env.*
+!.env.example
+!.env.local.development.example
+!.env.docker.example
+
+# Build artifacts and IDE files
+build/
+dist/
+*.egg-info/
+.idea/
+.vscode/
+
+# Local infrastructure state
+infra/terraform/.terraform/
+infra/terraform/*.tfstate*

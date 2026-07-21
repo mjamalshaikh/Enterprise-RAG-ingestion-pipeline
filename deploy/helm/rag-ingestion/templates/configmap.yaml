@@ -1,0 +1,19 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Values.runtimeConfig.name }}
+  labels:
+    {{- include "rag-ingestion.labels" . | nindent 4 }}
+data:
+  RAG_ENVIRONMENT: {{ .Values.runtimeConfig.environment | quote }}
+  RAG_KAFKA_BOOTSTRAP_SERVERS: {{ .Values.runtimeConfig.kafkaBootstrapServers | quote }}
+  RAG_APICURIO_URL: {{ .Values.runtimeConfig.apicurioUrl | quote }}
+  RAG_MINIO_ENDPOINT: {{ .Values.runtimeConfig.minioEndpoint | quote }}
+  RAG_MINIO_SECURE: {{ .Values.runtimeConfig.minioSecure | quote }}
+  RAG_MINIO_SOURCE_BUCKET: {{ .Values.runtimeConfig.minioSourceBucket | quote }}
+  RAG_MINIO_ARTIFACT_BUCKET: {{ .Values.runtimeConfig.minioArtifactBucket | quote }}
+  RAG_QDRANT_URL: {{ .Values.runtimeConfig.qdrantUrl | quote }}
+  RAG_QDRANT_COLLECTION: {{ .Values.runtimeConfig.qdrantCollection | quote }}
+  RAG_BGE_MODEL_NAME: {{ .Values.runtimeConfig.bgeModelName | quote }}
+  RAG_OTEL_SERVICE_NAME: {{ .Values.runtimeConfig.otelServiceName | quote }}
+  RAG_OTEL_EXPORTER_OTLP_ENDPOINT: {{ .Values.runtimeConfig.otelExporterOtlpEndpoint | quote }}

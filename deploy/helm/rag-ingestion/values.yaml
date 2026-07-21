@@ -1,0 +1,59 @@
+replicaCount: 1
+
+image:
+  repository: rag-ingestion
+  tag: latest
+  pullPolicy: IfNotPresent
+
+worker:
+  name: document-fetcher
+
+runtimeConfig:
+  name: rag-ingestion-runtime
+  environment: production
+  kafkaBootstrapServers: kafka:9092
+  apicurioUrl: http://apicurio:8080
+  minioEndpoint: minio:9000
+  minioSecure: "true"
+  minioSourceBucket: rag-source
+  minioArtifactBucket: rag-artifacts
+  qdrantUrl: http://qdrant:6333
+  qdrantCollection: rag_chunks_bge_m3_v1
+  bgeModelName: BAAI/bge-m3
+  otelServiceName: rag-ingestion
+  otelExporterOtlpEndpoint: http://otel-collector:4317
+
+# Create this Secret outside the chart, ideally using workload identity and an external-secret controller.
+runtimeSecretName: rag-ingestion-runtime-secrets
+
+serviceAccount:
+  create: true
+  name: ""
+  annotations: {}
+
+podAnnotations: {}
+
+resources:
+  requests:
+    cpu: 250m
+    memory: 512Mi
+  limits:
+    cpu: "1"
+    memory: 2Gi
+
+securityContext:
+  runAsNonRoot: true
+  runAsUser: 10001
+  runAsGroup: 10001
+  fsGroup: 10001
+
+containerSecurityContext:
+  allowPrivilegeEscalation: false
+  readOnlyRootFilesystem: true
+  capabilities:
+    drop: ["ALL"]
+
+nodeSelector: {}
+tolerations: []
+affinity: {}
+terminationGracePeriodSeconds: 60
