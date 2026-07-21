@@ -15,7 +15,7 @@ PostgreSQL is the source of truth. Qdrant is a rebuildable, versioned retrieval 
 Apply [001_enterprise_rag_metadata.sql](../migrations/001_enterprise_rag_metadata.sql) using a migration runner under a privileged migration role. For local Docker development:
 
 ```powershell
-Get-Content migrations/001_enterprise_rag_metadata.sql | docker compose -f deploy/docker/docker-compose.yml --env-file .env.docker exec -T postgres psql -U rag -d rag_ingestion
+Get-Content migrations/001_enterprise_rag_metadata.sql | docker compose -f deploy/docker/docker-compose.yml --env-file config/env/container.env --env-file secrets/local-access.env exec -T postgres psql -U rag -d rag_ingestion
 ```
 
 The runtime application role must be distinct from the migration owner and issue `SET LOCAL app.tenant_id = '<tenant UUID>'` in every transaction. This activates PostgreSQL row-level-security policies.

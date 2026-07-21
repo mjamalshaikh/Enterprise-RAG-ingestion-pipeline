@@ -13,8 +13,6 @@ venv/
 .env
 .env.*
 !.env.example
-!.env.local.development.example
-!.env.docker.example
 
 # Generated local credentials
 secrets/*

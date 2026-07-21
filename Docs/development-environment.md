@@ -11,7 +11,7 @@ The following systems are provided as containers by [the local Compose stack](..
 | PostgreSQL | `postgres:16-alpine` | `localhost:5432` | Metadata, idempotency, outbox, and Apicurio persistence |
 | MinIO | `minio/minio` | API `localhost:9000`, console `localhost:9001` | S3-compatible source and artifact storage |
 | Kafka | `apache/kafka:3.9.0` | `localhost:29092` | Event transport for ingestion stages |
-| Apicurio Registry | `apicurio/apicurio-registry:3.3.0` | `localhost:8080` | Event schema registry |
+| Apicurio Registry | `apicurio/apicurio-registry` | `localhost:6980` | Event schema registry |
 | Qdrant | `qdrant/qdrant:v1.13.4` | HTTP `localhost:6333`, gRPC `localhost:6334` | Vector store |
 | OpenTelemetry Collector | `otel/opentelemetry-collector-contrib:0.120.0` | OTLP gRPC `localhost:4317`, HTTP `localhost:4318` | Telemetry gateway |
 | Prometheus | `prom/prometheus:v3.2.1` | `localhost:9090` | Metrics storage and alert evaluation |
@@ -22,13 +22,13 @@ The worker container is defined separately in [docker-compose.workers.yml](../de
 
 ## Start the local platform
 
-1. Copy `.env.local.development.example` to `.env`. This file is for Python running directly on your laptop and uses `localhost` endpoints.
-2. Copy `.env.docker.example` to `.env.docker`. This file is for workers running inside Docker and uses Compose service names such as `postgres` and `kafka`.
-3. Replace all development-only secrets in both files; do not commit either file.
+1. Use `config/env/host.env` for Python running directly on your laptop. It uses `localhost` endpoints and has no secrets.
+2. Use `config/env/container.env` for workers running inside Docker. It uses service names such as `postgres` and `kafka` and has no secrets.
+3. Create the ignored `secrets/local-access.env` from its committed template and populate all local credentials. Add the ignored `secrets/workers/<worker>.env` file for the worker being started.
 4. Start backing services:
 
    ```text
-   docker compose -f deploy/docker/docker-compose.yml --env-file .env.docker up -d
+   docker compose -f deploy/docker/docker-compose.yml --env-file config/env/container.env --env-file secrets/local-access.env up -d
    ```
 
 5. Inspect container state:
@@ -40,7 +40,7 @@ The worker container is defined separately in [docker-compose.workers.yml](../de
 6. Start workers when their modules exist:
 
    ```text
-   docker compose -f deploy/docker/docker-compose.yml -f deploy/docker/docker-compose.workers.yml --env-file .env.docker --profile workers up --build
+   docker compose -f deploy/docker/docker-compose.yml -f deploy/docker/docker-compose.workers.yml --env-file config/env/container.env --env-file secrets/local-access.env --env-file secrets/workers/document-fetcher.env --profile workers up --build
    ```
 
 ## Verify service availability
@@ -48,7 +48,7 @@ The worker container is defined separately in [docker-compose.workers.yml](../de
 | Check | Expected result |
 | --- | --- |
 | `http://localhost:6333` | Qdrant service response |
-| `http://localhost:8080/apis/registry/v3` | Apicurio Registry API response |
+| `http://localhost:6980/apis/registry/v3` | Apicurio Registry API response |
 | `http://localhost:9090/-/ready` | Prometheus readiness response |
 | `http://localhost:3100/ready` | Loki readiness response |
 | `http://localhost:3000` | Grafana sign-in page |
@@ -64,7 +64,7 @@ Kafka, PostgreSQL, and MinIO should be verified through their container health/s
 
 ## How application settings are passed
 
-[`Settings`](../src/rag_ingestion/config/settings.py) reads `RAG_`-prefixed environment variables when a process starts. For example, `postgres_dsn` is populated from `RAG_POSTGRES_DSN` and `embedding_batch_size` from `RAG_EMBEDDING_BATCH_SIZE`. Pydantic validates and converts the values, including booleans, numbers, URLs, and secrets.
+[`Settings`](../src/rag_ingestion/config/settings.py) reads the committed host profile, an optional ignored `.env`, and the ignored `secrets/local-access.env` file. Process environment variables override all files. For example, `postgres_dsn` is populated from `RAG_POSTGRES_DSN` and `embedding_batch_size` from `RAG_EMBEDDING_BATCH_SIZE`. Pydantic validates and converts the values, including booleans, numbers, URLs, and secrets.
 
 Do not edit `settings.py` to change an endpoint. Set an environment variable instead:
 
@@ -81,4 +81,4 @@ The hostname depends on where the Python process runs:
 | Docker Compose worker | `postgres` | `kafka:9092` | `qdrant:6333` |
 | Kubernetes worker | Helm/cluster service DNS name | Helm/cluster service DNS name | Helm/cluster service DNS name |
 
-Inside a container, `localhost` means the container itself, not your laptop or another Compose service. That is why `.env` and `.env.docker` deliberately use different hostnames.
+Inside a container, `localhost` means the container itself, not your laptop or another Compose service. That is why the host and container profiles deliberately use different hostnames.

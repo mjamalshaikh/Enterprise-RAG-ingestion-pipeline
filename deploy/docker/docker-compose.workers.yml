@@ -22,14 +22,9 @@ services:
       RAG_OTEL_TRACES_SAMPLER: ${RAG_OTEL_TRACES_SAMPLER:-parentbased_traceidratio}
       RAG_OTEL_TRACES_SAMPLER_ARG: ${RAG_OTEL_TRACES_SAMPLER_ARG:-1.0}
     command: ["--worker", "${RAG_WORKER_NAME:-document-fetcher}"]
-    depends_on:
-      postgres:
-        condition: service_healthy
-      kafka:
-        condition: service_started
-      minio:
-        condition: service_started
-      qdrant:
-        condition: service_started
-      otel-collector:
-        condition: service_started
+    networks: [default, internal_network]
+
+networks:
+  internal_network:
+    external: true
+    name: internal_network

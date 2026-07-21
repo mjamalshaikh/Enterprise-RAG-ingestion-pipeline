@@ -53,6 +53,9 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+    networks:
+      default:
+        aliases: [apicurio-registry]
 
   qdrant:
     image: qdrant/qdrant:v1.13.4
@@ -62,6 +65,7 @@ services:
       QDRANT__SERVICE__JWT_RBAC: "true"
     ports: ["6333:6333", "6334:6334"]
     volumes: ["qdrant_data:/qdrant/storage"]
+    networks: [default, internal_network]
 
   bootstrap-init:
     image: python:3.11-slim
@@ -147,3 +151,8 @@ volumes:
   prometheus_data:
   loki_data:
   grafana_data:
+
+networks:
+  internal_network:
+    external: true
+    name: internal_network

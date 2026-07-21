@@ -1,7 +1,8 @@
 [CmdletBinding()]
 param(
     [string]$SecretsPath = "secrets/local-access.env",
-    [switch]$Rotate
+    [switch]$Rotate,
+    [switch]$PrepareOnly
 )
 
 $ErrorActionPreference = "Stop"
@@ -48,6 +49,12 @@ function ConvertTo-SqlLiteral {
     return "'" + $Value.Replace("'", "''") + "'"
 }
 
+$platformSecretNames = @(
+    "POSTGRES_PASSWORD",
+    "MINIO_ROOT_PASSWORD",
+    "GRAFANA_ADMIN_PASSWORD"
+)
+
 $secretNames = @(
     "POSTGRES_MIGRATOR_PASSWORD",
     "POSTGRES_DOCUMENT_FETCHER_PASSWORD",
@@ -62,6 +69,14 @@ $secretNames = @(
 )
 
 $secrets = Read-EnvFile -Path $SecretsPath
+if (-not $secrets.ContainsKey("MINIO_ROOT_USER") -or [string]::IsNullOrWhiteSpace($secrets["MINIO_ROOT_USER"])) {
+    $secrets["MINIO_ROOT_USER"] = "minio-root"
+}
+foreach ($name in $platformSecretNames) {
+    if (-not $secrets.ContainsKey($name) -or [string]::IsNullOrWhiteSpace($secrets[$name])) {
+        $secrets[$name] = New-RandomSecret
+    }
+}
 foreach ($name in $secretNames) {
     if ($Rotate -or -not $secrets.ContainsKey($name) -or [string]::IsNullOrWhiteSpace($secrets[$name])) {
         $secrets[$name] = New-RandomSecret
@@ -89,9 +104,15 @@ foreach ($worker in $workerEnvironments) {
     }
 }
 
+if ($PrepareOnly) {
+    Write-Host "Prepared local platform, worker, and Qdrant credentials in $SecretsPath."
+    Write-Host "Start Compose, then run this script again without -PrepareOnly to create PostgreSQL roles."
+    return
+}
+
 $psqlArgs = @(
     "compose", "-f", "deploy/docker/docker-compose.yml",
-    "--env-file", ".env.docker", "--env-file", $SecretsPath,
+    "--env-file", "config/env/container.env", "--env-file", $SecretsPath,
     "exec", "-T", "postgres", "psql", "-U", "rag", "-d", "rag_ingestion"
 )
 
