@@ -19,7 +19,7 @@ class Settings(BaseSettings):
         # local credentials, including MinIO service identities. An optional
         # .env supports per-developer non-secret overrides. Process variables
         # remain the highest-priority runtime override.
-        env_file=("config/env/host.env", ".env", "secrets/local-access.env"),
+        env_file=("config/env/host.env", ".env", "secrets/local-runtime-secrets.env"),
         env_prefix="RAG_",
         extra="ignore",
     )

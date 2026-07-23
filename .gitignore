@@ -16,7 +16,7 @@ venv/
 
 # Generated local credentials
 secrets/*
-!secrets/*.example
+!secrets/*.template
 
 # Build artifacts and IDE files
 build/

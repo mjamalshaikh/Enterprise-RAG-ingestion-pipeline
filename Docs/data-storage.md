@@ -15,7 +15,7 @@ PostgreSQL is the source of truth. Qdrant is a rebuildable, versioned retrieval 
 Apply [001_enterprise_rag_metadata.sql](../migrations/001_enterprise_rag_metadata.sql) using a migration runner under a privileged migration role. For local Docker development:
 
 ```powershell
-Get-Content migrations/001_enterprise_rag_metadata.sql | docker compose -f deploy/docker/docker-compose.yml --env-file config/env/container.env --env-file secrets/local-access.env exec -T postgres psql -U rag -d rag_ingestion
+Get-Content migrations/001_enterprise_rag_metadata.sql | docker compose -f deploy/docker/docker-compose.yml --env-file config/env/container.env --env-file secrets/local-runtime-secrets.env exec -T postgres psql -U rag -d rag_ingestion
 ```
 
 The runtime application role must be distinct from the migration owner and issue `SET LOCAL app.tenant_id = '<tenant UUID>'` in every transaction. This activates PostgreSQL row-level-security policies.
@@ -81,7 +81,11 @@ Qdrant uses API keys and JWT collection permissions rather than database users. 
 | Read-only key | `QDRANT_READ_ONLY_API_KEY` / `RAG_QDRANT_READ_ONLY_API_KEY` | Query-only services; cannot change collections or points |
 | JWT collection token | Generated after enabling `QDRANT__SERVICE__JWT_RBAC` | Production service credentials scoped to a specific collection and read/write permission |
 
-Use the admin key only for migrations/bootstrap and indexing. Query APIs must receive a read-only or collection-read JWT. For production, terminate TLS before Qdrant or enable native TLS, restrict network access, enable audit logging, and store keys only in a secret manager.
+Use the admin key only for the restricted deployment bootstrap. The indexer
+must receive a collection-write JWT; the query API must receive a
+collection-read JWT. All other workers receive no Qdrant credential. For
+production, terminate TLS before Qdrant or enable native TLS, restrict network
+access, enable audit logging, and store keys only in a secret manager.
 
 ## 20–90 implementation baseline
 

@@ -32,22 +32,22 @@ The project worker and project Qdrant service now attach to the existing externa
 docker network inspect internal_network
 ```
 
-Use the committed `config/env/container.env` profile together with the ignored `secrets/local-access.env` file, then start only Qdrant from this repository:
+Use the committed `config/env/container.env` profile together with the ignored `secrets/local-runtime-secrets.env` file, then start only Qdrant from this repository:
 
 ```powershell
-docker compose -f deploy/docker/docker-compose.yml --env-file config/env/container.env --env-file secrets/local-access.env up -d qdrant
+docker compose -f deploy/docker/docker-compose.yml --env-file config/env/container.env --env-file secrets/local-runtime-secrets.env up -d qdrant
 ```
 
 The MinIO identities are deliberately kept outside tracked configuration.
 `ingestion-service` is the worker identity and `rag-api` is the API identity;
-their credentials belong in the ignored `secrets/local-access.env` file.
+their credentials belong in the ignored `secrets/local-runtime-secrets.env` file.
 Pass that file after the endpoint environment file so the local secrets
 override its placeholders.
 
 Start an implemented worker without Compose starting duplicate dependencies:
 
 ```powershell
-docker compose -f deploy/docker/docker-compose.yml -f deploy/docker/docker-compose.workers.yml --env-file config/env/container.env --env-file secrets/local-access.env --env-file secrets/workers/document-fetcher.env --profile workers up --build rag-worker
+docker compose -f deploy/docker/docker-compose.yml -f deploy/docker/docker-compose.workers.yml --env-file config/env/container.env --env-file secrets/local-runtime-secrets.env --env-file config/workers/document-fetcher.env --profile workers up --build rag-worker
 ```
 
 ## PostgreSQL and Apicurio prerequisites

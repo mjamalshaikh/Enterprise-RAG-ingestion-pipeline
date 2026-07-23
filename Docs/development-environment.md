@@ -24,11 +24,11 @@ The worker container is defined separately in [docker-compose.workers.yml](../de
 
 1. Use `config/env/host.env` for Python running directly on your laptop. It uses `localhost` endpoints and has no secrets.
 2. Use `config/env/container.env` for workers running inside Docker. It uses service names such as `postgres` and `kafka` and has no secrets.
-3. Create the ignored `secrets/local-access.env` from its committed template and populate all local credentials. Add the ignored `secrets/workers/<worker>.env` file for the worker being started.
+3. Create the ignored `secrets/local-runtime-secrets.env` from its committed template and populate all local credentials. Select the committed `config/workers/<worker>.env` file for the worker being started.
 4. Start backing services:
 
    ```text
-   docker compose -f deploy/docker/docker-compose.yml --env-file config/env/container.env --env-file secrets/local-access.env up -d
+   docker compose -f deploy/docker/docker-compose.yml --env-file config/env/container.env --env-file secrets/local-runtime-secrets.env up -d
    ```
 
 5. Inspect container state:
@@ -40,7 +40,7 @@ The worker container is defined separately in [docker-compose.workers.yml](../de
 6. Start workers when their modules exist:
 
    ```text
-   docker compose -f deploy/docker/docker-compose.yml -f deploy/docker/docker-compose.workers.yml --env-file config/env/container.env --env-file secrets/local-access.env --env-file secrets/workers/document-fetcher.env --profile workers up --build
+   docker compose -f deploy/docker/docker-compose.yml -f deploy/docker/docker-compose.workers.yml --env-file config/env/container.env --env-file secrets/local-runtime-secrets.env --env-file config/workers/document-fetcher.env --profile workers up --build
    ```
 
 ## Verify service availability
@@ -64,7 +64,7 @@ Kafka, PostgreSQL, and MinIO should be verified through their container health/s
 
 ## How application settings are passed
 
-[`Settings`](../src/rag_ingestion/config/settings.py) reads the committed host profile, an optional ignored `.env`, and the ignored `secrets/local-access.env` file. Process environment variables override all files. For example, `postgres_dsn` is populated from `RAG_POSTGRES_DSN` and `embedding_batch_size` from `RAG_EMBEDDING_BATCH_SIZE`. Pydantic validates and converts the values, including booleans, numbers, URLs, and secrets.
+[`Settings`](../src/rag_ingestion/config/settings.py) reads the committed host profile, an optional ignored `.env`, and the ignored `secrets/local-runtime-secrets.env` file. Process environment variables override all files. For example, `postgres_dsn` is populated from `RAG_POSTGRES_DSN` and `embedding_batch_size` from `RAG_EMBEDDING_BATCH_SIZE`. Pydantic validates and converts the values, including booleans, numbers, URLs, and secrets.
 
 Do not edit `settings.py` to change an endpoint. Set an environment variable instead:
 

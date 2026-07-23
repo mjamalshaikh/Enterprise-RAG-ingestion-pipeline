@@ -1,0 +1,82 @@
+-- PostgreSQL service-login provisioning script for psql.
+--
+-- Prerequisite: apply migrations/002_database_roles_and_privileges.sql first.
+-- That migration owns the rag_ingestion_* group roles and their privileges.
+-- This file creates or updates only the eight LOGIN identities, their
+-- passwords, connection limits, and membership in those existing group roles.
+--
+-- Replace all CHANGE_ME values below with strong static passwords before use.
+-- Do not commit real passwords.
+--
+-- psql / Docker usage:
+--   docker compose -f deploy/docker/docker-compose.yml cp scripts/create-rag-postgres-users.psql postgres:/tmp/create-rag-postgres-users.psql
+--   docker compose -f deploy/docker/docker-compose.yml exec -it postgres psql -U rag -d rag_ingestion -f /tmp/create-rag-postgres-users.psql
+--
+-- pgAdmin usage:
+--   This is a psql file, so pgAdmin cannot run it unchanged: pgAdmin does not
+--   support the eight \set commands below or the :'password_variable' syntax.
+--   1. Connect to the rag_ingestion database in Query Tool.
+--   2. Do not copy/run the \set lines.
+--   3. Copy the CREATE/ALTER/GRANT SQL statements below in small sections.
+--   4. In each ALTER ROLE statement replace :'..._password' with the matching
+--      literal, e.g. PASSWORD 'your-static-password'.
+--   5. Run the CREATE blocks, then ALTER ROLE statements, then GRANT statements.
+--   Use passwords containing letters, digits, hyphens, and underscores only;
+--   this avoids needing SQL quote escaping during manual pgAdmin entry.
+
+\set ON_ERROR_STOP on
+
+\set migrator_password 'Rag-Migrator-CHANGE_ME'
+\set document_fetcher_password 'Rag-Fetcher-CHANGE_ME'
+\set content_extractor_password 'Rag-Extractor-CHANGE_ME'
+\set chunker_password 'Rag-Chunker-CHANGE_ME'
+\set embedder_password 'Rag-Embedder-CHANGE_ME'
+\set indexer_password 'Rag-Indexer-CHANGE_ME'
+\set outbox_publisher_password 'Rag-Outbox-CHANGE_ME'
+\set query_api_password 'Rag-QueryApi-CHANGE_ME'
+
+-- Create missing LOGIN identities. Role privileges remain in migration 002.
+DO $$ BEGIN
+    CREATE ROLE rag_migration_login LOGIN;
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN
+    CREATE ROLE rag_document_fetcher LOGIN;
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN
+    CREATE ROLE rag_content_extractor LOGIN;
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN
+    CREATE ROLE rag_chunker LOGIN;
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN
+    CREATE ROLE rag_embedder LOGIN;
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN
+    CREATE ROLE rag_indexer LOGIN;
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN
+    CREATE ROLE rag_outbox_publisher LOGIN;
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN
+    CREATE ROLE rag_query_api LOGIN;
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+
+-- Password values are safely SQL-quoted by psql's :'variable' syntax.
+-- These ALTER ROLE statements make the file safe to rerun for password rotation.
+ALTER ROLE rag_migration_login LOGIN INHERIT NOSUPERUSER NOCREATEDB NOCREATEROLE NOREPLICATION CONNECTION LIMIT 2 PASSWORD :'migrator_password';
+ALTER ROLE rag_document_fetcher LOGIN INHERIT NOSUPERUSER NOCREATEDB NOCREATEROLE NOREPLICATION CONNECTION LIMIT 4 PASSWORD :'document_fetcher_password';
+ALTER ROLE rag_content_extractor LOGIN INHERIT NOSUPERUSER NOCREATEDB NOCREATEROLE NOREPLICATION CONNECTION LIMIT 4 PASSWORD :'content_extractor_password';
+ALTER ROLE rag_chunker LOGIN INHERIT NOSUPERUSER NOCREATEDB NOCREATEROLE NOREPLICATION CONNECTION LIMIT 4 PASSWORD :'chunker_password';
+ALTER ROLE rag_embedder LOGIN INHERIT NOSUPERUSER NOCREATEDB NOCREATEROLE NOREPLICATION CONNECTION LIMIT 4 PASSWORD :'embedder_password';
+ALTER ROLE rag_indexer LOGIN INHERIT NOSUPERUSER NOCREATEDB NOCREATEROLE NOREPLICATION CONNECTION LIMIT 4 PASSWORD :'indexer_password';
+ALTER ROLE rag_outbox_publisher LOGIN INHERIT NOSUPERUSER NOCREATEDB NOCREATEROLE NOREPLICATION CONNECTION LIMIT 2 PASSWORD :'outbox_publisher_password';
+ALTER ROLE rag_query_api LOGIN INHERIT NOSUPERUSER NOCREATEDB NOCREATEROLE NOREPLICATION CONNECTION LIMIT 8 PASSWORD :'query_api_password';
+
+GRANT rag_ingestion_migrator TO rag_migration_login;
+GRANT rag_ingestion_runtime TO rag_document_fetcher;
+GRANT rag_ingestion_runtime TO rag_content_extractor;
+GRANT rag_ingestion_runtime TO rag_chunker;
+GRANT rag_ingestion_runtime TO rag_embedder;
+GRANT rag_ingestion_runtime TO rag_indexer;
+GRANT rag_ingestion_outbox_publisher TO rag_outbox_publisher;
+GRANT rag_ingestion_query_reader TO rag_query_api;

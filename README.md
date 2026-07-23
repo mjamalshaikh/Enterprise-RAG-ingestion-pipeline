@@ -21,8 +21,8 @@ An event-driven Python foundation for ingesting enterprise documents (such as PD
 ## Local platform
 
 1. Review `config/env/host.env` (host Python) and `config/env/container.env` (Docker workers). These profiles are committed because they contain no secrets.
-2. Create `secrets/local-access.env` from `secrets/local-access.env.example`, then run `.\scripts\provision_local_access.ps1 -PrepareOnly` to generate missing local credentials and worker files.
-3. Start the backing services with `docker compose -f deploy/docker/docker-compose.yml --env-file config/env/container.env --env-file secrets/local-access.env up -d`.
+2. Create `secrets/local-runtime-secrets.env` from `secrets/local-runtime-secrets.env.template` and populate the local credentials.
+3. Start the backing services with `docker compose -f deploy/docker/docker-compose.yml --env-file config/env/container.env --env-file secrets/local-runtime-secrets.env up -d`.
 4. Install the application with `pip install -e ".[dev]"` after Python 3.11+ is available.
 
 The Compose stack is strictly for local development. Production deployments must use managed secrets, TLS, authenticated Kafka, and multi-node storage/database/vector clusters.
@@ -34,7 +34,7 @@ Local observability endpoints: Grafana `http://localhost:3000`, Prometheus `http
 Workers are built once as OCI images and configured at runtime through `RAG_` environment variables. Run the local worker profile after worker modules are implemented:
 
 ```text
-docker compose -f deploy/docker/docker-compose.yml -f deploy/docker/docker-compose.workers.yml --env-file config/env/container.env --env-file secrets/local-access.env --env-file secrets/workers/document-fetcher.env --profile workers up --build
+docker compose -f deploy/docker/docker-compose.yml -f deploy/docker/docker-compose.workers.yml --env-file config/env/container.env --env-file secrets/local-runtime-secrets.env --env-file config/workers/document-fetcher.env --profile workers up --build
 ```
 
 Kubernetes deployments are rendered from [the Helm chart](deploy/helm/rag-ingestion). The chart is cloud-neutral: it references a pre-created runtime Secret and accepts service endpoints as values. See [cloud-portability.md](Docs/cloud-portability.md) before selecting AWS-managed equivalents.
