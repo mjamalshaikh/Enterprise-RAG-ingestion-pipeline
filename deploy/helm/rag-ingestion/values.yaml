@@ -10,7 +10,6 @@ worker:
 
 runtimeConfig:
   name: rag-ingestion-runtime
-  environment: production
   kafkaBootstrapServers: kafka:9092
   apicurioUrl: http://apicurio:8080
   minioEndpoint: minio:9000
@@ -21,6 +20,7 @@ runtimeConfig:
   qdrantCollection: rag_chunks_bge_m3_v1
   bgeModelName: BAAI/bge-m3
   otelServiceName: rag-ingestion
+  observabilityMode: otlp
   otelExporterOtlpEndpoint: http://otel-collector:4317
 
 # Create this Secret outside the chart, ideally using workload identity and an external-secret controller.

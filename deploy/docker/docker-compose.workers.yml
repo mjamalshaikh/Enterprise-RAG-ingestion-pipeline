@@ -6,7 +6,7 @@ services:
     image: ${RAG_WORKER_IMAGE:-rag-ingestion:local}
     profiles: [workers]
     environment:
-      RAG_ENVIRONMENT: ${RAG_ENVIRONMENT:-local}
+      RAG_CONFIG_PROFILE: container
       RAG_POSTGRES_DSN: ${RAG_POSTGRES_DSN:?set RAG_POSTGRES_DSN in .env}
       RAG_KAFKA_BOOTSTRAP_SERVERS: ${RAG_KAFKA_BOOTSTRAP_SERVERS:?set RAG_KAFKA_BOOTSTRAP_SERVERS in .env}
       RAG_APICURIO_URL: ${RAG_APICURIO_URL:?set RAG_APICURIO_URL in .env}

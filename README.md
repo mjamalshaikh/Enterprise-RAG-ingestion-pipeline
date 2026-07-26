@@ -29,6 +29,14 @@ The Compose stack is strictly for local development. Production deployments must
 
 Local observability endpoints: Grafana `http://localhost:3000`, Prometheus `http://localhost:9090`, Loki `http://localhost:3100`, and OTLP gRPC `localhost:4317` / HTTP `localhost:4318`.
 
+Application logging follows `RAG_OBSERVABILITY_MODE` from the selected
+configuration profile. `console` writes exception messages and full tracebacks
+to the process console; `otlp` sends ERROR records (including exception message
+and traceback) to
+`RAG_OTEL_EXPORTER_OTLP_ENDPOINT`; the Helm chart supplies this value from its
+runtime ConfigMap. Host processes use `config/env/host.env` by default and
+container workers select `config/env/container.env` via `RAG_CONFIG_PROFILE=container`.
+
 ## Portable worker runtime
 
 Workers are built once as OCI images and configured at runtime through `RAG_` environment variables. Run the local worker profile after worker modules are implemented:

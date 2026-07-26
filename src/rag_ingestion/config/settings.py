@@ -1,6 +1,9 @@
 """Typed configuration for the pipeline's external service adapters."""
 
 from functools import lru_cache
+from os import getenv
+from pathlib import Path
+from typing import Literal
 
 from pydantic import AliasChoices, AnyHttpUrl, Field, SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -24,7 +27,6 @@ class Settings(BaseSettings):
         extra="ignore",
     )
 
-    environment: str = "local"
     postgres_dsn: str
     kafka_bootstrap_servers: str = "localhost:29092"
     apicurio_url: AnyHttpUrl = "http://localhost:6980"
@@ -56,6 +58,7 @@ class Settings(BaseSettings):
     bge_model_name: str = "BAAI/bge-m3"
     embedding_batch_size: int = Field(default=16, ge=1)
     otel_service_name: str = "rag-ingestion"
+    observability_mode: Literal["console", "otlp"] = "console"
     otel_exporter_otlp_endpoint: AnyHttpUrl = "http://localhost:4317"
     otel_traces_sampler: str = "parentbased_traceidratio"
     otel_traces_sampler_arg: float = Field(default=1.0, ge=0.0, le=1.0)
@@ -64,8 +67,29 @@ class Settings(BaseSettings):
     oidc_issuer_url: AnyHttpUrl | None = None
 
 
+def _environment_files() -> tuple[Path, Path, Path]:
+    """Return the selected non-secret profile and local override files.
+
+    Host execution is the safe default.  OCI workloads select the container
+    profile with ``RAG_CONFIG_PROFILE=container``; production generally injects
+    its settings through Kubernetes environment variables, which retain the
+    highest Pydantic settings priority.
+    """
+
+    profile = getenv("RAG_CONFIG_PROFILE", "host").lower()
+    if profile not in {"host", "container"}:
+        raise ValueError("RAG_CONFIG_PROFILE must be either 'host' or 'container'.")
+
+    root = Path(__file__).resolve().parents[3]
+    return (
+        root / ".env",
+        root / "config" / "env" / f"{profile}.env",
+        root / "secrets" / "local-runtime-secrets.env",
+    )
+
+
 @lru_cache
 def get_settings() -> Settings:
-    """Return one immutable settings instance per worker process."""
+    """Return one immutable settings instance using the selected env profile."""
 
-    return Settings()
+    return Settings(_env_file=_environment_files())

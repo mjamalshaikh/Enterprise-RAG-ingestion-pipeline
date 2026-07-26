@@ -5,7 +5,7 @@ metadata:
   labels:
     {{- include "rag-ingestion.labels" . | nindent 4 }}
 data:
-  RAG_ENVIRONMENT: {{ .Values.runtimeConfig.environment | quote }}
+  RAG_CONFIG_PROFILE: "container"
   RAG_KAFKA_BOOTSTRAP_SERVERS: {{ .Values.runtimeConfig.kafkaBootstrapServers | quote }}
   RAG_APICURIO_URL: {{ .Values.runtimeConfig.apicurioUrl | quote }}
   RAG_MINIO_ENDPOINT: {{ .Values.runtimeConfig.minioEndpoint | quote }}
@@ -16,4 +16,5 @@ data:
   RAG_QDRANT_COLLECTION: {{ .Values.runtimeConfig.qdrantCollection | quote }}
   RAG_BGE_MODEL_NAME: {{ .Values.runtimeConfig.bgeModelName | quote }}
   RAG_OTEL_SERVICE_NAME: {{ .Values.runtimeConfig.otelServiceName | quote }}
+  RAG_OBSERVABILITY_MODE: {{ .Values.runtimeConfig.observabilityMode | quote }}
   RAG_OTEL_EXPORTER_OTLP_ENDPOINT: {{ .Values.runtimeConfig.otelExporterOtlpEndpoint | quote }}
