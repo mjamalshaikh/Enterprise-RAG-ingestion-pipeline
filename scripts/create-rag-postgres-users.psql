@@ -24,6 +24,27 @@
 --   Use passwords containing letters, digits, hyphens, and underscores only;
 --   this avoids needing SQL quote escaping during manual pgAdmin entry.
 
+-- Extracted and executed manually in pgAdmin
+
+-- ALTER ROLE rag_migration_login LOGIN INHERIT NOSUPERUSER NOCREATEDB NOCREATEROLE NOREPLICATION CONNECTION LIMIT 2 PASSWORD 'YourStrongStaticPasswordHere';
+-- ALTER ROLE rag_document_fetcher LOGIN INHERIT NOSUPERUSER NOCREATEDB NOCREATEROLE NOREPLICATION CONNECTION LIMIT 4 PASSWORD 'YourStrongStaticPasswordHere';
+-- ALTER ROLE rag_content_extractor LOGIN INHERIT NOSUPERUSER NOCREATEDB NOCREATEROLE NOREPLICATION CONNECTION LIMIT 4 PASSWORD 'YourStrongStaticPasswordHere';
+-- ALTER ROLE rag_chunker LOGIN INHERIT NOSUPERUSER NOCREATEDB NOCREATEROLE NOREPLICATION CONNECTION LIMIT 4 PASSWORD 'YourStrongStaticPasswordHere';
+-- ALTER ROLE rag_embedder LOGIN INHERIT NOSUPERUSER NOCREATEDB NOCREATEROLE NOREPLICATION CONNECTION LIMIT 4 PASSWORD 'YourStrongStaticPasswordHere';
+-- ALTER ROLE rag_indexer LOGIN INHERIT NOSUPERUSER NOCREATEDB NOCREATEROLE NOREPLICATION CONNECTION LIMIT 4 PASSWORD 'YourStrongStaticPasswordHere';
+-- ALTER ROLE rag_outbox_publisher LOGIN INHERIT NOSUPERUSER NOCREATEDB NOCREATEROLE NOREPLICATION CONNECTION LIMIT 2 PASSWORD 'YourStrongStaticPasswordHere';
+-- ALTER ROLE rag_query_api LOGIN INHERIT NOSUPERUSER NOCREATEDB NOCREATEROLE NOREPLICATION CONNECTION LIMIT 8 PASSWORD 'YourStrongStaticPasswordHere';
+
+-- GRANT rag_ingestion_migrator TO rag_migration_login;
+-- GRANT rag_ingestion_runtime TO rag_document_fetcher;
+-- GRANT rag_ingestion_runtime TO rag_content_extractor;
+-- GRANT rag_ingestion_runtime TO rag_chunker;
+-- GRANT rag_ingestion_runtime TO rag_embedder;
+-- GRANT rag_ingestion_runtime TO rag_indexer;
+-- GRANT rag_ingestion_outbox_publisher TO rag_outbox_publisher;
+-- GRANT rag_ingestion_query_reader TO rag_query_api;
+
+
 \set ON_ERROR_STOP on
 
 \set migrator_password 'Rag-Migrator-CHANGE_ME'

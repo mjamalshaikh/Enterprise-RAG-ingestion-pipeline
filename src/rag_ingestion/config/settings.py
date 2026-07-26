@@ -2,7 +2,7 @@
 
 from functools import lru_cache
 
-from pydantic import AnyHttpUrl, Field, SecretStr
+from pydantic import AliasChoices, AnyHttpUrl, Field, SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -39,8 +39,19 @@ class Settings(BaseSettings):
     minio_source_bucket: str = "rag-source"
     minio_artifact_bucket: str = "rag-artifacts"
     qdrant_url: AnyHttpUrl = "http://localhost:6333"
-    qdrant_api_key: SecretStr
-    qdrant_read_only_api_key: SecretStr | None = None
+    # QDRANT_* names are the canonical secrets used to configure the Qdrant
+    # server. RAG_QDRANT_* names are injected into application containers by
+    # their worker profiles. Accept either form so host processes can read the
+    # local secret file without duplicating the same key under two names.
+    qdrant_api_key: SecretStr = Field(
+        validation_alias=AliasChoices("RAG_QDRANT_API_KEY", "QDRANT_ADMIN_API_KEY")
+    )
+    qdrant_read_only_api_key: SecretStr | None = Field(
+        default=None,
+        validation_alias=AliasChoices(
+            "RAG_QDRANT_READ_ONLY_API_KEY", "QDRANT_READ_ONLY_API_KEY"
+        ),
+    )
     qdrant_collection: str = "rag_chunks_bge_m3_v1"
     bge_model_name: str = "BAAI/bge-m3"
     embedding_batch_size: int = Field(default=16, ge=1)

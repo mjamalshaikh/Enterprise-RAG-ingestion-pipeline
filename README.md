@@ -44,3 +44,4 @@ See [development-environment.md](Docs/development-environment.md) for the local 
 See [data-storage.md](Docs/data-storage.md) for the PostgreSQL metadata schema and BGE-M3 dense/sparse Qdrant collection bootstrap.
 See [local-access-provisioning.md](Docs/local-access-provisioning.md) to create local database logins and Qdrant API keys without committing secrets.
 See [docker-desktop-integration.md](Docs/docker-desktop-integration.md) to connect to the already-running Docker Desktop services without host-port conflicts.
+See [document-submission-api.md](Docs/document-submission-api.md) to run the FastAPI upload endpoint and submit a document from its client, cURL, Postman, or Swagger UI.
