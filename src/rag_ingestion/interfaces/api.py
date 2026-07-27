@@ -24,6 +24,8 @@ from rag_ingestion.infrastructure.document_submission import (
 )
 from rag_ingestion.infrastructure.observability import (
     configure_observability,
+    instrument_fastapi,
+    instrument_sqlalchemy,
     shutdown_observability,
 )
 
@@ -45,6 +47,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     settings = settings or get_settings()
     configure_observability(settings)
     engine = create_engine_from_settings(settings)
+    instrument_sqlalchemy(engine, settings)
     repository = DocumentSubmissionRepository(engine)
     object_store = SourceObjectStore(settings)
 
@@ -55,6 +58,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         shutdown_observability()
 
     app = FastAPI(title="RAG document submission API", version="0.1.0", lifespan=lifespan)
+    instrument_fastapi(app, settings)
 
     @app.exception_handler(Exception)
     async def unhandled_exception(_: Request, error: Exception) -> JSONResponse:

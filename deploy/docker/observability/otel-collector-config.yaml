@@ -19,6 +19,10 @@ exporters:
     endpoint: 0.0.0.0:8889
   otlphttp/loki:
     endpoint: http://loki:3100/otlp
+  otlp/tempo:
+    endpoint: tempo:4317
+    tls:
+      insecure: true
   debug:
     verbosity: basic
 
@@ -38,4 +42,4 @@ service:
     traces:
       receivers: [otlp]
       processors: [memory_limiter, batch]
-      exporters: [debug]
+      exporters: [otlp/tempo, debug]

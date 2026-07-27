@@ -59,6 +59,7 @@ class Settings(BaseSettings):
     embedding_batch_size: int = Field(default=16, ge=1)
     otel_service_name: str = "rag-ingestion"
     observability_mode: Literal["console", "otlp"] = "console"
+    tracing_enabled: bool = False
     otel_exporter_otlp_endpoint: AnyHttpUrl = "http://localhost:4317"
     otel_traces_sampler: str = "parentbased_traceidratio"
     otel_traces_sampler_arg: float = Field(default=1.0, ge=0.0, le=1.0)

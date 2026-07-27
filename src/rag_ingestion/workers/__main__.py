@@ -7,6 +7,8 @@ import importlib
 import logging
 from collections.abc import Callable
 
+from opentelemetry import trace
+
 from rag_ingestion.config.settings import get_settings
 from rag_ingestion.infrastructure.observability import (
     configure_observability,
@@ -32,18 +34,21 @@ def main() -> None:
     configure_observability(get_settings())
 
     try:
-        module = importlib.import_module(module_name)
-        run: Callable[[], None] = module.run
-    except (ImportError, AttributeError) as error:
-        logger.exception("Unable to start worker '%s': %s", worker_name, error)
-        message = (
-            f"Worker '{worker_name}' is not implemented. "
-            f"Create {module_name}.run() before deploying this container."
-        )
-        raise SystemExit(message) from error
+        with trace.get_tracer(__name__).start_as_current_span(
+            "rag.worker.run", attributes={"rag.worker.name": worker_name}
+        ):
+            try:
+                module = importlib.import_module(module_name)
+                run: Callable[[], None] = module.run
+            except (ImportError, AttributeError) as error:
+                logger.exception("Unable to start worker '%s': %s", worker_name, error)
+                message = (
+                    f"Worker '{worker_name}' is not implemented. "
+                    f"Create {module_name}.run() before deploying this container."
+                )
+                raise SystemExit(message) from error
 
-    try:
-        run()
+            run()
     except Exception as error:
         logger.exception(
             "Worker '%s' stopped because of an unhandled exception: %s", worker_name, error

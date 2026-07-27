@@ -16,6 +16,7 @@ The following systems are provided as containers by [the local Compose stack](..
 | OpenTelemetry Collector | `otel/opentelemetry-collector-contrib:0.120.0` | OTLP gRPC `localhost:4317`, HTTP `localhost:4318` | Telemetry gateway |
 | Prometheus | `prom/prometheus:v3.2.1` | `localhost:9090` | Metrics storage and alert evaluation |
 | Loki | `grafana/loki:3.7.0` | `localhost:3100` | Structured log storage |
+| Tempo | `grafana/tempo:2.8.1` | `localhost:3200` | Distributed trace storage |
 | Grafana | `grafana/grafana:11.5.2` | `localhost:3000` | Metrics/log exploration and dashboards |
 
 The worker container is defined separately in [docker-compose.workers.yml](../deploy/docker/docker-compose.workers.yml). It is enabled only through the `workers` Compose profile after the corresponding worker module has been implemented.
@@ -51,6 +52,7 @@ The worker container is defined separately in [docker-compose.workers.yml](../de
 | `http://localhost:6980/apis/registry/v3` | Apicurio Registry API response |
 | `http://localhost:9090/-/ready` | Prometheus readiness response |
 | `http://localhost:3100/ready` | Loki readiness response |
+| `http://localhost:3200/ready` | Tempo readiness response |
 | `http://localhost:3000` | Grafana sign-in page |
 
 Kafka, PostgreSQL, and MinIO should be verified through their container health/status rather than an unauthenticated browser request. Use `docker compose ps` and service-specific clients after credentials are configured.

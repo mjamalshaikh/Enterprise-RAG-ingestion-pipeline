@@ -71,6 +71,8 @@ services:
     image: python:3.11-slim
     working_dir: /app
     environment:
+      RAG_CONFIG_PROFILE: container
+      RAG_OBSERVABILITY_MODE: ${RAG_OBSERVABILITY_MODE:-console}
       RAG_POSTGRES_DSN: ${POSTGRES_DSN:-postgresql://rag:${POSTGRES_PASSWORD:-rag}@postgres:5432/${POSTGRES_DB:-rag_ingestion}}
       RAG_KAFKA_BOOTSTRAP_SERVERS: ${KAFKA_BOOTSTRAP_SERVERS:-kafka:9092}
       RAG_APICURIO_URL: ${APICURIO_URL:-http://apicurio:8080}
@@ -104,6 +106,8 @@ services:
     depends_on:
       loki:
         condition: service_started
+      tempo:
+        condition: service_started
 
   prometheus:
     image: prom/prometheus:v3.2.1
@@ -127,6 +131,14 @@ services:
       - loki_data:/loki
     ports: ["3100:3100"]
 
+  tempo:
+    image: grafana/tempo:2.8.1
+    command: ["-config.file=/etc/tempo/config.yaml"]
+    volumes:
+      - ./observability/tempo-config.yaml:/etc/tempo/config.yaml:ro
+      - tempo_data:/var/tempo
+    ports: ["3200:3200"]
+
   grafana:
     image: grafana/grafana:11.5.2
     environment:
@@ -142,6 +154,8 @@ services:
         condition: service_started
       loki:
         condition: service_started
+      tempo:
+        condition: service_started
 
 volumes:
   postgres_data:
@@ -150,6 +164,7 @@ volumes:
   qdrant_data:
   prometheus_data:
   loki_data:
+  tempo_data:
   grafana_data:
 
 networks:

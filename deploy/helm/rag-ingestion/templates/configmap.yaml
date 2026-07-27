@@ -17,4 +17,5 @@ data:
   RAG_BGE_MODEL_NAME: {{ .Values.runtimeConfig.bgeModelName | quote }}
   RAG_OTEL_SERVICE_NAME: {{ .Values.runtimeConfig.otelServiceName | quote }}
   RAG_OBSERVABILITY_MODE: {{ .Values.runtimeConfig.observabilityMode | quote }}
+  RAG_TRACING_ENABLED: {{ .Values.runtimeConfig.tracingEnabled | quote }}
   RAG_OTEL_EXPORTER_OTLP_ENDPOINT: {{ .Values.runtimeConfig.otelExporterOtlpEndpoint | quote }}

@@ -36,6 +36,12 @@ and traceback) to
 `RAG_OTEL_EXPORTER_OTLP_ENDPOINT`; the Helm chart supplies this value from its
 runtime ConfigMap. Host processes use `config/env/host.env` by default and
 container workers select `config/env/container.env` via `RAG_CONFIG_PROFILE=container`.
+`RAG_TRACING_ENABLED` controls tracing separately: when `true`, API requests,
+PostgreSQL operations, outbound HTTP/S3 calls, and worker runs are exported
+through the collector to Tempo. Open Grafana at `http://localhost:3000` and use
+the provisioned Tempo data source to explore them. Set it to `false` for tests
+or workloads where tracing is not wanted; use sampling settings to control
+production trace volume.
 
 ## Portable worker runtime
 
