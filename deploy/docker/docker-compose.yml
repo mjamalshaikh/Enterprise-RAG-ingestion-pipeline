@@ -7,6 +7,7 @@ services:
       POSTGRES_DB: ${POSTGRES_DB:-rag_ingestion}
       POSTGRES_USER: ${POSTGRES_USER:-rag}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
+      POSTGRES_APPLICATION_PASSWORD: ${POSTGRES_APPLICATION_PASSWORD:?set POSTGRES_APPLICATION_PASSWORD in .env}
     ports: ["5432:5432"]
     volumes: ["postgres_data:/var/lib/postgresql/data"]
     healthcheck:
@@ -38,24 +39,9 @@ services:
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
       KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
       KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "false"
     ports: ["29092:29092"]
     volumes: ["kafka_data:/tmp/kraft-combined-logs"]
-
-  apicurio:
-    image: apicurio/apicurio-registry:3.3.0
-    environment:
-      APICURIO_STORAGE_KIND: sql
-      APICURIO_STORAGE_SQL_KIND: postgresql
-      APICURIO_DATASOURCE_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB:-rag_ingestion}
-      APICURIO_DATASOURCE_USERNAME: ${POSTGRES_USER:-rag}
-      APICURIO_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
-    ports: ["8080:8080"]
-    depends_on:
-      postgres:
-        condition: service_healthy
-    networks:
-      default:
-        aliases: [apicurio-registry]
 
   qdrant:
     image: qdrant/qdrant:v1.13.4
@@ -75,7 +61,6 @@ services:
       RAG_OBSERVABILITY_MODE: ${RAG_OBSERVABILITY_MODE:-console}
       RAG_POSTGRES_DSN: ${POSTGRES_DSN:-postgresql://rag:${POSTGRES_PASSWORD:-rag}@postgres:5432/${POSTGRES_DB:-rag_ingestion}}
       RAG_KAFKA_BOOTSTRAP_SERVERS: ${KAFKA_BOOTSTRAP_SERVERS:-kafka:9092}
-      RAG_APICURIO_URL: ${APICURIO_URL:-http://apicurio:8080}
       RAG_MINIO_ENDPOINT: ${MINIO_ENDPOINT:-minio:9000}
       RAG_MINIO_ACCESS_KEY: ${MINIO_ROOT_USER:-minioadmin}
       RAG_MINIO_SECRET_KEY: ${MINIO_ROOT_PASSWORD:-minioadmin}
@@ -86,15 +71,18 @@ services:
       POSTGRES_DB: ${POSTGRES_DB:-rag_ingestion}
       POSTGRES_USER: ${POSTGRES_USER:-rag}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
+      POSTGRES_APPLICATION_PASSWORD: ${POSTGRES_APPLICATION_PASSWORD:?set POSTGRES_APPLICATION_PASSWORD in .env}
     depends_on:
       postgres:
         condition: service_healthy
+      kafka:
+        condition: service_started
       qdrant:
         condition: service_started
     volumes:
       - ../..:/app
     command: >
-      sh -c "apt-get update && apt-get install -y --no-install-recommends postgresql-client && pip install --no-cache-dir -e . && until pg_isready -h postgres -U $$POSTGRES_USER -d $$POSTGRES_DB; do sleep 2; done && PGPASSWORD=$$POSTGRES_PASSWORD psql -h postgres -U $$POSTGRES_USER -d $$POSTGRES_DB -f migrations/001_enterprise_rag_metadata.sql && PGPASSWORD=$$POSTGRES_PASSWORD psql -h postgres -U $$POSTGRES_USER -d $$POSTGRES_DB -f migrations/002_database_roles_and_privileges.sql && python scripts/bootstrap_qdrant.py"
+      sh -c "apt-get update && apt-get install -y --no-install-recommends postgresql-client && pip install --no-cache-dir -e . && until pg_isready -h postgres -U $$POSTGRES_USER -d $$POSTGRES_DB; do sleep 2; done && PGPASSWORD=$$POSTGRES_PASSWORD psql -h postgres -U $$POSTGRES_USER -d $$POSTGRES_DB -f migrations/001_enterprise_rag_metadata.sql && PGPASSWORD=$$POSTGRES_PASSWORD psql -h postgres -U $$POSTGRES_USER -d $$POSTGRES_DB -f migrations/002_database_roles_and_privileges.sql && PGPASSWORD=$$POSTGRES_PASSWORD psql -h postgres -U $$POSTGRES_USER -d $$POSTGRES_DB -f migrations/003_outbox_event_contract_metadata.sql && PGPASSWORD=$$POSTGRES_PASSWORD psql -h postgres -U $$POSTGRES_USER -d $$POSTGRES_DB -f migrations/004_single_application_database_user.sql && PGPASSWORD=$$POSTGRES_PASSWORD psql -h postgres -U $$POSTGRES_USER -d $$POSTGRES_DB -f deploy/postgresql/provision-service-logins.sql && python scripts/bootstrap_qdrant.py && python scripts/bootstrap_kafka.py"
     restart: "no"
 
   otel-collector:

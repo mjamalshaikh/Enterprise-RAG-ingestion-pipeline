@@ -7,6 +7,7 @@ ENV PIP_NO_CACHE_DIR=1 \
 COPY pyproject.toml README.md ./
 COPY src ./src
 COPY config/env ./config/env
+COPY schemas ./schemas
 RUN pip install --prefix=/install .
 
 FROM python:3.11-slim AS runtime
@@ -19,6 +20,7 @@ ENV PYTHONUNBUFFERED=1 \
 
 COPY --from=builder /install /usr/local
 COPY --from=builder /app/config/env ./config/env
+COPY --from=builder /app/schemas ./schemas
 USER appuser
 
 # A worker stage is supplied by Docker Compose or the Helm chart.

@@ -17,6 +17,7 @@ from rag_ingestion.infrastructure.observability import (
 
 
 WORKER_MODULES = {
+    "outbox-publisher": "rag_ingestion.workers.outbox_publisher",
     "document-fetcher": "rag_ingestion.workers.document_fetcher",
     "content-extractor": "rag_ingestion.workers.content_extractor",
     "chunker": "rag_ingestion.workers.chunker",

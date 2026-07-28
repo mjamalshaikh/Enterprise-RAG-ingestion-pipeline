@@ -8,9 +8,9 @@ An event-driven Python foundation for ingesting enterprise documents (such as PD
 | --- | --- |
 | IBM Docling | PDF/DOCX conversion and structured content extraction |
 | MinIO | S3-compatible storage for source and normalized document artifacts |
-| PostgreSQL | Document metadata, idempotency keys, transactional outbox, and Apicurio storage |
+| PostgreSQL | Document metadata, idempotency keys, and transactional outbox |
 | Kafka | Durable asynchronous pipeline events, retries, and dead-letter topics |
-| Apicurio Registry | Versioned Avro event contracts for Kafka producers and consumers |
+| Checked-in Avro schemas | Versioned event contracts for Kafka producers and consumers |
 | BGE-M3 | Multilingual dense, sparse, and multi-vector embedding model |
 | Qdrant | Tenant-filtered vector and payload index |
 | OpenTelemetry Collector | Receives, enriches, and routes application telemetry |
@@ -24,6 +24,14 @@ An event-driven Python foundation for ingesting enterprise documents (such as PD
 2. Create `secrets/local-runtime-secrets.env` from `secrets/local-runtime-secrets.env.template` and populate the local credentials.
 3. Start the backing services with `docker compose -f deploy/docker/docker-compose.yml --env-file config/env/container.env --env-file secrets/local-runtime-secrets.env up -d`.
 4. Install the application with `pip install -e ".[dev]"` after Python 3.11+ is available.
+
+Avro contracts are checked into `schemas/avro`. Schema changes must be reviewed
+with every producer and consumer, and the event's `schema_version` is sent in
+each Kafka record header.
+
+Kafka topic creation is also explicit. The bundled platform initializer runs it
+automatically; when using the shared Docker Desktop Kafka broker, run
+`python scripts/bootstrap_kafka.py` once before the outbox publisher.
 
 The Compose stack is strictly for local development. Production deployments must use managed secrets, TLS, authenticated Kafka, and multi-node storage/database/vector clusters.
 
@@ -56,6 +64,6 @@ Kubernetes deployments are rendered from [the Helm chart](deploy/helm/rag-ingest
 See [the architecture](Docs/architecture.md) for the intended ports-and-adapters design and event flow.
 See [development-environment.md](Docs/development-environment.md) for the local Docker Desktop environment, service endpoints, and startup checks.
 See [data-storage.md](Docs/data-storage.md) for the PostgreSQL metadata schema and BGE-M3 dense/sparse Qdrant collection bootstrap.
-See [local-access-provisioning.md](Docs/local-access-provisioning.md) to create local database logins and Qdrant API keys without committing secrets.
+See [local-access-provisioning.md](Docs/local-access-provisioning.md) to create the shared local database login and Qdrant API keys without committing secrets.
 See [docker-desktop-integration.md](Docs/docker-desktop-integration.md) to connect to the already-running Docker Desktop services without host-port conflicts.
 See [document-submission-api.md](Docs/document-submission-api.md) to run the FastAPI upload endpoint and submit a document from its client, cURL, Postman, or Swagger UI.

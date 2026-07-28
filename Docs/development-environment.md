@@ -8,10 +8,9 @@ The following systems are provided as containers by [the local Compose stack](..
 
 | System | Container image | Local endpoint | Purpose |
 | --- | --- | --- | --- |
-| PostgreSQL | `postgres:16-alpine` | `localhost:5432` | Metadata, idempotency, outbox, and Apicurio persistence |
+| PostgreSQL | `postgres:16-alpine` | `localhost:5432` | Metadata, idempotency, and outbox |
 | MinIO | `minio/minio` | API `localhost:9000`, console `localhost:9001` | S3-compatible source and artifact storage |
 | Kafka | `apache/kafka:3.9.0` | `localhost:29092` | Event transport for ingestion stages |
-| Apicurio Registry | `apicurio/apicurio-registry` | `localhost:6980` | Event schema registry |
 | Qdrant | `qdrant/qdrant:v1.13.4` | HTTP `localhost:6333`, gRPC `localhost:6334` | Vector store |
 | OpenTelemetry Collector | `otel/opentelemetry-collector-contrib:0.120.0` | OTLP gRPC `localhost:4317`, HTTP `localhost:4318` | Telemetry gateway |
 | Prometheus | `prom/prometheus:v3.2.1` | `localhost:9090` | Metrics storage and alert evaluation |
@@ -49,7 +48,6 @@ The worker container is defined separately in [docker-compose.workers.yml](../de
 | Check | Expected result |
 | --- | --- |
 | `http://localhost:6333` | Qdrant service response |
-| `http://localhost:6980/apis/registry/v3` | Apicurio Registry API response |
 | `http://localhost:9090/-/ready` | Prometheus readiness response |
 | `http://localhost:3100/ready` | Loki readiness response |
 | `http://localhost:3200/ready` | Tempo readiness response |

@@ -6,9 +6,9 @@
 | --- | --- | --- |
 | IBM Docling | No durable state; produces normalized document output | Run as isolated workers with resource limits; pin models and record their version in metadata. |
 | MinIO | Original documents and derived extraction artifacts | Versioned buckets, server-side encryption, lifecycle policies, tenant-scoped prefixes, and backup replication. |
-| PostgreSQL | Metadata, idempotency ledger, outbox, and schema-registry tables | HA deployment, encrypted backups, migrations, connection pooling, and point-in-time recovery. |
+| PostgreSQL | Metadata, idempotency ledger, and outbox | HA deployment, encrypted backups, migrations, connection pooling, and point-in-time recovery. |
 | Kafka | Pipeline commands/events, retries, and DLQs | Three or more brokers, TLS/SASL, ACLs, replication factor >= 3, monitoring, and retention policy per topic. |
-| Apicurio Registry | Event-schema artifacts and compatibility rules | PostgreSQL-backed, protected by OIDC, backed up with PostgreSQL, and deployed independently of event consumers. |
+| Checked-in Avro schemas | Event contracts | Version schemas with the producers and consumers that use them; review compatibility before release. |
 | BGE-M3 | Model cache only; embeddings are persisted in Qdrant | Isolate model-serving workers, select CPU/GPU via deployment profile, and version the model in each vector payload. |
 | Qdrant | Vectors plus non-sensitive chunk metadata | Cluster mode, API-key/TLS protection, snapshots, and collection aliases for zero-downtime reindexing. |
 | OpenTelemetry Collector | Telemetry in transit | Run as a gateway deployment with memory limits, batching, tail sampling policy, TLS, and authenticated exporters. |
@@ -18,7 +18,7 @@
 
 ## Kafka topic convention
 
-All topics begin with `rag.ingestion.v1` and use Avro values governed by Apicurio.
+All topics begin with `rag.ingestion.v1` and use Avro values encoded from checked-in schemas.
 
 | Topic | Producer | Consumer |
 | --- | --- | --- |
@@ -32,6 +32,12 @@ All topics begin with `rag.ingestion.v1` and use Avro values governed by Apicuri
 | `rag.ingestion.v1.<stage>.dlq` | Failed stage worker | Operations tooling |
 
 Kafka record keys are `tenant_id:document_id`. Headers include `event_id`, `correlation_id`, `causation_id`, `tenant_id`, `schema_version`, and W3C `traceparent`.
+
+The checked-in `scripts/bootstrap_kafka.py` creates these topics explicitly.
+Local development uses one partition and one replica; production must set
+`RAG_KAFKA_TOPIC_PARTITIONS` and `RAG_KAFKA_TOPIC_REPLICATION_FACTOR` to the
+reviewed cluster values before bootstrapping. Existing topic settings are never
+mutated by the script.
 
 ## Security baseline
 

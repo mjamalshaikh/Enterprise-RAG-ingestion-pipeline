@@ -20,7 +20,7 @@ Get-Content migrations/001_enterprise_rag_metadata.sql | docker compose -f deplo
 
 The runtime application role must be distinct from the migration owner and issue `SET LOCAL app.tenant_id = '<tenant UUID>'` in every transaction. This activates PostgreSQL row-level-security policies.
 
-Apply [002_database_roles_and_privileges.sql](../migrations/002_database_roles_and_privileges.sql) next. It defines four group roles: migration, runtime worker, outbox publisher, and query reader. It also exposes narrowly scoped security-definer functions for claiming and completing outbox events across tenants, so the publisher does not need blanket `BYPASSRLS` access.
+Apply [002_database_roles_and_privileges.sql](../migrations/002_database_roles_and_privileges.sql), then [003_outbox_event_contract_metadata.sql](../migrations/003_outbox_event_contract_metadata.sql) and [004_single_application_database_user.sql](../migrations/004_single_application_database_user.sql). Migration 004 grants one non-owner application role access to every `rag` data artifact and future artifacts. The login remains subject to row-level security and cannot `DROP` existing artifacts because PostgreSQL reserves `DROP` for owners and superusers.
 
 ## Qdrant hybrid collection
 
@@ -60,16 +60,9 @@ Use Qdrant prefetch plus reciprocal-rank fusion (RRF) for one hybrid request: re
 
 ### PostgreSQL
 
-`002_database_roles_and_privileges.sql` intentionally creates **group roles without passwords**. The database administrator or secret manager creates login identities and grants exactly one group role to each:
+All APIs and workers use one login: `rag_application`. It is a member of the non-login `rag_ingestion_application` role created by migration 004. That role has all applicable privileges on `rag` tables, sequences, functions, and types, including future artifacts, but is not their owner and has no schema `CREATE` permission. Therefore it cannot drop an existing artifact. The database/schema owner remains an infrastructure-only identity used to apply migrations; it must never be placed in an API or worker configuration.
 
-| Login purpose | Group role | Capability |
-| --- | --- | --- |
-| Migration job | `rag_ingestion_migrator` | Schema migrations only |
-| Ingestion workers | `rag_ingestion_runtime` | Tenant-scoped document, chunk, audit, failure, and outbox writes |
-| Outbox publisher | `rag_ingestion_outbox_publisher` | Execute only the claim/complete outbox functions |
-| Retrieval API | `rag_ingestion_query_reader` | Tenant-scoped lineage and ACL reads |
-
-Do not use the PostgreSQL superuser or migration identity in an application container. Create login passwords/identity bindings outside Git, rotate them through the secret manager, and use a connection pool that resets session state after every transaction. Runtime logins inherit their assigned group role, but each tenant-bound transaction must still set `app.tenant_id`.
+Create or rotate `rag_application` with `deploy/postgresql/provision-service-logins.sql` using only `POSTGRES_APPLICATION_PASSWORD` from the secret manager. The script disables legacy per-service logins where present. Each tenant-bound transaction must still set `app.tenant_id`, because this shared login remains subject to row-level-security policies.
 
 ### Qdrant
 

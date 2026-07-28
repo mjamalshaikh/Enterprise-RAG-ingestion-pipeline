@@ -43,7 +43,7 @@ Production adapters should preserve `event_id`, `correlation_id`, and `tenant_id
 | Object storage | MinIO | Persist immutable originals and derived Docling artifacts in separate, tenant-prefixed buckets. |
 | Transactional state | PostgreSQL | Store document lifecycle state, idempotency keys, outbox records, and audit metadata. |
 | Event transport | Apache Kafka | Carry durable stage events; use retry and DLQ topics per consumer stage. |
-| Event contracts | Apicurio Registry | Govern backward-compatible Avro contracts for every Kafka topic. |
+| Event contracts | Checked-in Avro schemas | Govern reviewed, backward-compatible Avro contracts for every Kafka topic. |
 | Embeddings | BAAI BGE-M3 | Produce multilingual dense vectors initially; retain the option to add sparse and ColBERT retrieval later. |
 | Vector index | Qdrant | Store vectors and document/chunk payloads; enforce every query and upsert with `tenant_id` filters. |
 | Telemetry intake | OpenTelemetry Collector | Receive OTLP telemetry, add deployment metadata, and route signals without coupling workers to a backend. |
@@ -57,7 +57,7 @@ Production adapters should preserve `event_id`, `correlation_id`, and `tenant_id
 2. An outbox publisher sends the registered Avro event to Kafka, keyed by `tenant_id:document_id`.
 3. Consumers record idempotency by `event_id` before external side effects and acknowledge only after success.
 4. Transient failures are retried through retry topics; exhausted events go to a stage-specific DLQ with the original headers preserved.
-5. Schema IDs and compatibility policy are managed in Apicurio. Producers and consumers reject unknown or incompatible schemas.
+5. Schema versions are propagated in Kafka headers. Producers and consumers deploy compatible checked-in Avro contracts together.
 
 See [technology-stack.md](technology-stack.md) for operational configuration and ownership.
 

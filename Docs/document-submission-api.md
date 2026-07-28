@@ -22,9 +22,9 @@ VALUES ('demo', 'Demo tenant')
 RETURNING id;
 ```
 
-The API process needs a PostgreSQL identity with `rag_ingestion_runtime`
-permissions and an object-storage identity allowed to write `rag-source`. The
-existing local secret template supports that using `RAG_POSTGRES_DSN`,
+The API process uses the shared non-owner PostgreSQL login `rag_application`
+and an object-storage identity allowed to write `rag-source`. The existing
+local secret template supports that using `RAG_POSTGRES_DSN`,
 `RAG_MINIO_API_ACCESS_KEY`, and `RAG_MINIO_API_SECRET_KEY` (or the fallback
 `RAG_MINIO_ACCESS_KEY` / `RAG_MINIO_SECRET_KEY`). Do not use the MinIO root
 credentials for the API.

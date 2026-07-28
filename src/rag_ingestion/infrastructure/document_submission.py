@@ -134,7 +134,7 @@ class DocumentSubmissionRepository:
                     """
                     INSERT INTO rag.ingestion_outbox
                         (tenant_id, event_id, aggregate_type, aggregate_id, event_type,
-                         kafka_topic, schema_artifact_id, payload, headers)
+                         kafka_topic, event_schema_name, payload, headers)
                     VALUES
                         (:tenant_id, :event_id, 'document', :document_id, 'DocumentSubmitted',
                          :kafka_topic, 'ingestion-event', CAST(:payload AS jsonb),

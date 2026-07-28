@@ -11,7 +11,6 @@ worker:
 runtimeConfig:
   name: rag-ingestion-runtime
   kafkaBootstrapServers: kafka:9092
-  apicurioUrl: http://apicurio:8080
   minioEndpoint: minio:9000
   minioSecure: "true"
   minioSourceBucket: rag-source

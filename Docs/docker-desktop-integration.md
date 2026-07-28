@@ -8,7 +8,6 @@ The repository was aligned with the Compose files supplied from the local Docker
 | --- | --- | --- | --- |
 | Kafka 4.1 | `localhost:29092` | `kafka:9092` | Required event broker |
 | Kafka UI | `localhost:8092` | `kafka-ui:8080` | Local operations only |
-| Apicurio Registry 3.1 | `localhost:6980` | `apicurio-registry:8080` | Required schema registry |
 | PostgreSQL | `localhost:5432` | `postgres:5432` | Required metadata/outbox database |
 | Keycloak | `localhost:8090` | `keycloak:8080` | Optional OIDC provider for future API authentication |
 | MinIO | `localhost:9000` | `minio:9000` | Required object storage |
@@ -24,7 +23,7 @@ The repository was aligned with the Compose files supplied from the local Docker
 
 ## Avoid duplicate containers and port conflicts
 
-Do not start the repository's bundled PostgreSQL, Kafka, Apicurio, MinIO, or observability services when the corresponding local Docker Desktop stacks are already running. They bind the same host ports.
+Do not start the repository's bundled PostgreSQL, Kafka, MinIO, or observability services when the corresponding local Docker Desktop stacks are already running. They bind the same host ports.
 
 The project worker and project Qdrant service now attach to the existing external Docker network `internal_network`. Confirm it exists before starting them:
 
@@ -50,11 +49,11 @@ Start an implemented worker without Compose starting duplicate dependencies:
 docker compose -f deploy/docker/docker-compose.yml -f deploy/docker/docker-compose.workers.yml --env-file config/env/container.env --env-file secrets/local-runtime-secrets.env --env-file config/workers/document-fetcher.env --profile workers up --build rag-worker
 ```
 
-## PostgreSQL and Apicurio prerequisites
+## PostgreSQL prerequisites
 
 The existing PostgreSQL Compose definition is configured for Keycloak's `keycloak_db`, not this pipeline's `rag_ingestion` database. Before a worker can connect, provision a separate `rag_ingestion` database and the RAG roles/logins on that PostgreSQL server. Do not point pipeline migrations at Keycloak's database or use the Keycloak database login.
 
-The supplied Apicurio Registry uses PostgreSQL database `apicurio` with the `apicurio` login. Keep it separate from the RAG metadata database. Its Docker endpoint is `http://apicurio-registry:8080`; its host endpoint is `http://localhost:6980`.
+The pipeline uses checked-in Avro schemas and does not require a schema registry.
 
 ## Optional systems
 

@@ -7,7 +7,6 @@ metadata:
 data:
   RAG_CONFIG_PROFILE: "container"
   RAG_KAFKA_BOOTSTRAP_SERVERS: {{ .Values.runtimeConfig.kafkaBootstrapServers | quote }}
-  RAG_APICURIO_URL: {{ .Values.runtimeConfig.apicurioUrl | quote }}
   RAG_MINIO_ENDPOINT: {{ .Values.runtimeConfig.minioEndpoint | quote }}
   RAG_MINIO_SECURE: {{ .Values.runtimeConfig.minioSecure | quote }}
   RAG_MINIO_SOURCE_BUCKET: {{ .Values.runtimeConfig.minioSourceBucket | quote }}

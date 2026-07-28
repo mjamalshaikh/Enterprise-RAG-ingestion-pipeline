@@ -27,9 +27,15 @@ class Settings(BaseSettings):
         extra="ignore",
     )
 
-    postgres_dsn: str
+    postgres_dsn: str = Field(
+        validation_alias=AliasChoices("RAG_POSTGRES_DSN", "POSTGRES_DSN", "postgres_dsn")
+    )
     kafka_bootstrap_servers: str = "localhost:29092"
-    apicurio_url: AnyHttpUrl = "http://localhost:6980"
+    kafka_topic_partitions: int = Field(default=1, ge=1)
+    kafka_topic_replication_factor: int = Field(default=1, ge=1)
+    outbox_publisher_name: str = "outbox-publisher"
+    outbox_batch_size: int = Field(default=50, ge=1, le=1000)
+    outbox_poll_interval_seconds: float = Field(default=1.0, gt=0.0, le=60.0)
     minio_endpoint: str = "localhost:9000"
     minio_access_key: str
     minio_secret_key: SecretStr
