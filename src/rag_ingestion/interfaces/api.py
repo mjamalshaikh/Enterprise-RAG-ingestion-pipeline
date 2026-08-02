@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import hashlib
 import logging
+from time import perf_counter
 from contextlib import asynccontextmanager
 from tempfile import SpooledTemporaryFile
 from uuid import UUID, uuid4
@@ -26,6 +27,7 @@ from rag_ingestion.infrastructure.observability import (
     configure_observability,
     instrument_fastapi,
     instrument_sqlalchemy,
+    record_http_request,
     shutdown_observability,
 )
 
@@ -67,6 +69,44 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         logger.exception("Unhandled API exception: %s", error)
         return JSONResponse(status_code=500, content={"detail": "Internal server error."})
 
+    @app.middleware("http")
+    async def record_response_metrics(request: Request, call_next):
+        started_at = perf_counter()
+        content_length = request.headers.get("content-length")
+        if (
+            request.method == "POST"
+            and request.url.path == "/v1/documents"
+            and content_length is not None
+            and content_length.isdigit()
+            and int(content_length) > settings.api_max_upload_bytes
+        ):
+            response = JSONResponse(
+                status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+                content={
+                    "detail": (
+                        "Upload exceeds the configured maximum of "
+                        f"{settings.api_max_upload_bytes} bytes."
+                    )
+                },
+            )
+            record_http_request(request.method, response.status_code)
+            logger.info(
+                "Rejected oversized upload from Content-Length content_length=%s max_bytes=%s",
+                content_length,
+                settings.api_max_upload_bytes,
+            )
+            return response
+
+        response = await call_next(request)
+        record_http_request(request.method, response.status_code)
+        logger.info(
+            "HTTP request completed method=%s status=%s duration_ms=%.1f",
+            request.method,
+            response.status_code,
+            (perf_counter() - started_at) * 1000,
+        )
+        return response
+
     @app.get("/healthz", tags=["operations"])
     async def healthz() -> dict[str, str]:
         return {"status": "ok"}
@@ -94,6 +134,19 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         byte_size = 0
         with SpooledTemporaryFile(max_size=8 * CHUNK_SIZE, mode="w+b") as buffered:
             while chunk := await file.read(CHUNK_SIZE):
+                if byte_size + len(chunk) > settings.api_max_upload_bytes:
+                    logger.info(
+                        "Rejected oversized upload while streaming filename=%s max_bytes=%s",
+                        file.filename,
+                        settings.api_max_upload_bytes,
+                    )
+                    raise HTTPException(
+                        status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+                        detail=(
+                            "Upload exceeds the configured maximum of "
+                            f"{settings.api_max_upload_bytes} bytes."
+                        ),
+                    )
                 digest.update(chunk)
                 byte_size += len(chunk)
                 buffered.write(chunk)

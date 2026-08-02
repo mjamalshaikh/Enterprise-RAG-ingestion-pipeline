@@ -1,0 +1,17 @@
+{
+  "type": "record",
+  "name": "DocumentSubmitted",
+  "namespace": "com.enterprise.rag.ingestion.v1",
+  "doc": "Command to validate and fetch a submitted source object. Document bytes are never carried in Kafka.",
+  "fields": [
+    {"name": "event_id", "type": "string"},
+    {"name": "event_type", "type": "string"},
+    {"name": "occurred_at", "type": "string"},
+    {"name": "correlation_id", "type": "string"},
+    {"name": "causation_id", "type": ["null", "string"], "default": null},
+    {"name": "tenant_id", "type": "string"},
+    {"name": "document_id", "type": "string"},
+    {"name": "payload_uri", "type": "string"},
+    {"name": "schema_version", "type": "string", "default": "1.0.0"}
+  ]
+}

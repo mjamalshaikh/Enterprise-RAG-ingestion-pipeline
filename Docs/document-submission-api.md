@@ -65,6 +65,26 @@ add a `file` key of type **File**. The optional text keys are `title`,
 value for the same tenant returns `409 Conflict` instead of emitting a second
 event. If omitted, the API generates one.
 
+## Upload-size limit
+
+The API rejects oversized submissions with `413 Payload Too Large` before they
+reach MinIO. `RAG_API_MAX_UPLOAD_BYTES` caps both the incoming multipart
+request when `Content-Length` is supplied and the actual file byte stream when
+it is not. The default is `52428800` (50 MiB), matching the document fetcher's
+current maximum document size.
+
+Set a different whole-byte value in `.env`, the process environment, or the
+host profile before starting the API. For example, this allows documents up to
+100 MiB:
+
+```text
+RAG_API_MAX_UPLOAD_BYTES=104857600
+```
+
+The streaming check remains necessary because clients may omit or falsify
+`Content-Length`. No object is uploaded to MinIO until the complete file has
+passed this limit.
+
 ## Troubleshoot source-storage errors
 
 If the endpoint returns `503` with `Source object storage is unavailable`,

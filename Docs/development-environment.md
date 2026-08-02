@@ -37,11 +37,39 @@ The worker container is defined separately in [docker-compose.workers.yml](../de
    docker compose -f deploy/docker/docker-compose.yml ps
    ```
 
-6. Start workers when their modules exist:
+6. Start each implemented worker in a separate terminal. The PDF extraction path needs the outbox publisher, document fetcher, and content extractor:
 
-   ```text
-   docker compose -f deploy/docker/docker-compose.yml -f deploy/docker/docker-compose.workers.yml --env-file config/env/container.env --env-file secrets/local-runtime-secrets.env --env-file config/workers/document-fetcher.env --profile workers up --build
+   ```powershell
+   docker compose -f deploy/docker/docker-compose.yml -f deploy/docker/docker-compose.workers.yml --env-file config/env/container.env --env-file secrets/local-runtime-secrets.env --env-file config/workers/outbox-publisher.env --profile workers up --build rag-worker
    ```
+
+   ```powershell
+   docker compose -f deploy/docker/docker-compose.yml -f deploy/docker/docker-compose.workers.yml --env-file config/env/container.env --env-file secrets/local-runtime-secrets.env --env-file config/workers/document-fetcher.env --profile workers up --build rag-worker
+   ```
+
+   ```powershell
+   docker compose -f deploy/docker/docker-compose.yml -f deploy/docker/docker-compose.workers.yml --env-file config/env/container.env --env-file secrets/local-runtime-secrets.env --env-file config/workers/content-extractor.env --profile workers up --build rag-worker
+   ```
+
+   The content extractor requires migrations through `006_content_extraction_metadata.sql` and the `ingestion-service` policy in [ingestion-service-policy.json](../deploy/minio/ingestion-service-policy.json). It warms its configured Docling extraction slots before consuming Kafka messages, then consumes only fetch-validated PDFs, writes normalized and manifest artifacts to MinIO, preserves figure/picture anchors and captions, and records that visual interpretation is not performed. `RAG_DOCUMENT_EXTRACTOR_MAX_CONCURRENCY=1` is the safe local default; raise it only after CPU/RAM load testing.
+
+## Run workers from the development environment
+
+With the local platform running, start each worker in a separate PowerShell terminal. `uv run` selects the host profile automatically; the worker launcher selects the matching committed worker profile. These commands append structured console telemetry to files under `logs`:
+
+```powershell
+uv run python -m rag_ingestion.workers --worker outbox-publisher 2>&1 | Tee-Object -FilePath .\logs\outbox-publisher -Append
+```
+
+```powershell
+uv run python -m rag_ingestion.workers --worker document-fetcher 2>&1 | Tee-Object -FilePath .\logs\document-fetcher.log -Append
+```
+
+```powershell
+uv run python -m rag_ingestion.workers --worker content-extractor 2>&1 | Tee-Object -FilePath .\logs\content-extractor.log -Append
+```
+
+Start the publisher first, then the fetcher and extractor. The extractor waits for `DocumentFetched` events, so it remains idle until a PDF upload has passed fetch-stage validation.
 
 ## Verify service availability
 

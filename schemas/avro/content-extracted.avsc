@@ -1,0 +1,24 @@
+{
+  "type": "record",
+  "name": "ContentExtracted",
+  "namespace": "com.enterprise.rag.ingestion.v1",
+  "doc": "A normalized extraction artifact ready for chunking. Document content remains in object storage.",
+  "fields": [
+    {"name": "event_id", "type": "string"},
+    {"name": "event_type", "type": "string"},
+    {"name": "occurred_at", "type": "string"},
+    {"name": "correlation_id", "type": "string"},
+    {"name": "causation_id", "type": "string"},
+    {"name": "tenant_id", "type": "string"},
+    {"name": "document_id", "type": "string"},
+    {"name": "document_version_id", "type": "string"},
+    {"name": "normalized_artifact_uri", "type": "string"},
+    {"name": "manifest_uri", "type": "string"},
+    {"name": "content_sha256", "type": "string"},
+    {"name": "extractor_name", "type": "string"},
+    {"name": "extractor_version", "type": "string"},
+    {"name": "extraction_status", "type": "string"},
+    {"name": "quality_summary", "type": "string"},
+    {"name": "schema_version", "type": "string", "default": "1.0.0"}
+  ]
+}

@@ -37,27 +37,27 @@ The Compose stack is strictly for local development. Production deployments must
 
 Local observability endpoints: Grafana `http://localhost:3000`, Prometheus `http://localhost:9090`, Loki `http://localhost:3100`, and OTLP gRPC `localhost:4317` / HTTP `localhost:4318`.
 
-Application logging follows `RAG_OBSERVABILITY_MODE` from the selected
-configuration profile. `console` writes exception messages and full tracebacks
-to the process console; `otlp` sends ERROR records (including exception message
-and traceback) to
-`RAG_OTEL_EXPORTER_OTLP_ENDPOINT`; the Helm chart supplies this value from its
-runtime ConfigMap. Host processes use `config/env/host.env` by default and
-container workers select `config/env/container.env` via `RAG_CONFIG_PROFILE=container`.
-`RAG_TRACING_ENABLED` controls tracing separately: when `true`, API requests,
-PostgreSQL operations, outbound HTTP/S3 calls, and worker runs are exported
-through the collector to Tempo. Open Grafana at `http://localhost:3000` and use
-the provisioned Tempo data source to explore them. Set it to `false` for tests
-or workloads where tracing is not wanted; use sampling settings to control
-production trace volume.
+`RAG_OBSERVABILITY_MODE` selects telemetry destinations. `console` writes logs,
+enabled traces, and periodic metrics to the process console; `otlp` sends all
+three signals to `RAG_OTEL_EXPORTER_OTLP_ENDPOINT`; and `console_and_otlp`
+writes logs to the console while also sending logs, enabled traces, and metrics
+to OTLP. `RAG_TRACING_ENABLED` controls whether
+trace spans are created at all. Worker message and outbox delivery counters are
+exported every `RAG_OTEL_METRICS_EXPORT_INTERVAL_SECONDS` (15 seconds by
+default). Host processes use `config/env/host.env` by default and container
+workers select `config/env/container.env` via `RAG_CONFIG_PROFILE=container`.
+In OTLP mode, open Grafana at `http://localhost:3000` to query Loki logs,
+Tempo traces, and Prometheus metrics.
 
 ## Portable worker runtime
 
-Workers are built once as OCI images and configured at runtime through `RAG_` environment variables. Run the local worker profile after worker modules are implemented:
+Workers are built once as OCI images and configured at runtime through `RAG_` environment variables. The currently implemented PDF path is the outbox publisher, document fetcher, and content extractor. Start the extractor with its dedicated profile after applying migration 006:
 
-```text
-docker compose -f deploy/docker/docker-compose.yml -f deploy/docker/docker-compose.workers.yml --env-file config/env/container.env --env-file secrets/local-runtime-secrets.env --env-file config/workers/document-fetcher.env --profile workers up --build
+```powershell
+docker compose -f deploy/docker/docker-compose.yml -f deploy/docker/docker-compose.workers.yml --env-file config/env/container.env --env-file secrets/local-runtime-secrets.env --env-file config/workers/content-extractor.env --profile workers up --build rag-worker
 ```
+
+Run the outbox publisher and document fetcher in separate terminals (using their matching profiles) to deliver a submitted PDF to the extractor. The extractor consumes `DocumentFetched`, writes normalized and manifest JSON to `rag-artifacts`, and emits `ContentExtracted` for a future chunker. It retains figure/picture anchors and captions but does not generate visual descriptions.
 
 Kubernetes deployments are rendered from [the Helm chart](deploy/helm/rag-ingestion). The chart is cloud-neutral: it references a pre-created runtime Secret and accepts service endpoints as values. See [cloud-portability.md](Docs/cloud-portability.md) before selecting AWS-managed equivalents.
 

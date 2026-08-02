@@ -6,6 +6,7 @@ import argparse
 import importlib
 import logging
 from collections.abc import Callable
+from os import environ
 
 from opentelemetry import trace
 
@@ -32,7 +33,12 @@ def main() -> None:
     parser.add_argument("--worker", choices=sorted(WORKER_MODULES), required=True)
     worker_name = parser.parse_args().worker
     module_name = WORKER_MODULES[worker_name]
-    configure_observability(get_settings())
+    # Select the matching committed profile before any adapter constructs its
+    # settings. This also makes direct host execution behave like Compose.
+    environ["RAG_WORKER_NAME"] = worker_name
+    settings = get_settings(worker_name)
+    configure_observability(settings)
+    logger.info("Starting worker '%s' using module '%s'.", worker_name, module_name)
 
     try:
         with trace.get_tracer(__name__).start_as_current_span(

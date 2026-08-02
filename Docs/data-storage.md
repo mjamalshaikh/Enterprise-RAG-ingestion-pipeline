@@ -20,7 +20,7 @@ Get-Content migrations/001_enterprise_rag_metadata.sql | docker compose -f deplo
 
 The runtime application role must be distinct from the migration owner and issue `SET LOCAL app.tenant_id = '<tenant UUID>'` in every transaction. This activates PostgreSQL row-level-security policies.
 
-Apply [002_database_roles_and_privileges.sql](../migrations/002_database_roles_and_privileges.sql), then [003_outbox_event_contract_metadata.sql](../migrations/003_outbox_event_contract_metadata.sql) and [004_single_application_database_user.sql](../migrations/004_single_application_database_user.sql). Migration 004 grants one non-owner application role access to every `rag` data artifact and future artifacts. The login remains subject to row-level security and cannot `DROP` existing artifacts because PostgreSQL reserves `DROP` for owners and superusers.
+Apply [002_database_roles_and_privileges.sql](../migrations/002_database_roles_and_privileges.sql), then [003_outbox_event_contract_metadata.sql](../migrations/003_outbox_event_contract_metadata.sql), [004_single_application_database_user.sql](../migrations/004_single_application_database_user.sql), [005_document_fetcher_inspection.sql](../migrations/005_document_fetcher_inspection.sql), and [006_content_extraction_metadata.sql](../migrations/006_content_extraction_metadata.sql). Migration 005 adds the fetch-stage type-detection and inspection fields; migration 006 adds extraction status and derived-artifact manifest references. Migration 004 grants one non-owner application role access to every `rag` data artifact and future artifacts. The login remains subject to row-level security and cannot `DROP` existing artifacts because PostgreSQL reserves `DROP` for owners and superusers.
 
 ## Qdrant hybrid collection
 

@@ -21,6 +21,7 @@ runtimeConfig:
   otelServiceName: rag-ingestion
   observabilityMode: otlp
   tracingEnabled: true
+  otelMetricsExportIntervalSeconds: 15
   otelExporterOtlpEndpoint: http://otel-collector:4317
 
 # Create this Secret outside the chart, ideally using workload identity and an external-secret controller.

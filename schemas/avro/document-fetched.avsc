@@ -1,0 +1,23 @@
+{
+  "type": "record",
+  "name": "DocumentFetched",
+  "namespace": "com.enterprise.rag.ingestion.v1",
+  "doc": "A validated source object ready for content extraction. Document bytes are never carried in Kafka.",
+  "fields": [
+    {"name": "event_id", "type": "string"},
+    {"name": "event_type", "type": "string"},
+    {"name": "occurred_at", "type": "string"},
+    {"name": "correlation_id", "type": "string"},
+    {"name": "causation_id", "type": "string"},
+    {"name": "tenant_id", "type": "string"},
+    {"name": "document_id", "type": "string"},
+    {"name": "document_version_id", "type": "string"},
+    {"name": "payload_uri", "type": "string"},
+    {"name": "detected_mime_type", "type": "string"},
+    {"name": "content_sha256", "type": "string"},
+    {"name": "byte_size", "type": "long"},
+    {"name": "inspection_status", "type": "string"},
+    {"name": "inspection_metadata", "type": "string"},
+    {"name": "schema_version", "type": "string", "default": "1.0.0"}
+  ]
+}

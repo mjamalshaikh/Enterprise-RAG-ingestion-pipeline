@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 from typing import BinaryIO
+from urllib.parse import urlparse
 from uuid import UUID
 
 import boto3
@@ -51,6 +52,14 @@ class SourceObjectStore:
 
     def delete(self, *, key: str) -> None:
         self.client.delete_object(Bucket=self.bucket, Key=key)
+
+    def get(self, *, uri: str):
+        """Return a streaming body for a source-bucket URI owned by this adapter."""
+
+        parsed = urlparse(uri)
+        if parsed.scheme != "s3" or parsed.netloc != self.bucket or not parsed.path.lstrip("/"):
+            raise ValueError("Source URI does not identify an object in the configured source bucket.")
+        return self.client.get_object(Bucket=self.bucket, Key=parsed.path.lstrip("/"))["Body"]
 
 
 class DocumentSubmissionRepository:
@@ -137,7 +146,7 @@ class DocumentSubmissionRepository:
                          kafka_topic, event_schema_name, payload, headers)
                     VALUES
                         (:tenant_id, :event_id, 'document', :document_id, 'DocumentSubmitted',
-                         :kafka_topic, 'ingestion-event', CAST(:payload AS jsonb),
+                         :kafka_topic, 'document-submitted', CAST(:payload AS jsonb),
                          CAST(:headers AS jsonb))
                     """
                 ),

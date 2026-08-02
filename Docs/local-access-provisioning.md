@@ -39,6 +39,12 @@ file contains `QDRANT_ADMIN_API_KEY` for bootstrap/indexing and
 collection-scoped JWTs and store all credentials in the deployment secret
 manager.
 
+## MinIO ingestion-service policy
+
+Attach [ingestion-service-policy.json](../deploy/minio/ingestion-service-policy.json) to the `ingestion-service` MinIO user. It grants the worker read access to `rag-source` and write-only access to `rag-artifacts`; it deliberately does not grant deletion rights. Ensure both buckets exist before starting the content extractor.
+
+In the MinIO Console, create or import a policy from that JSON file, then attach it to `ingestion-service`. Do not attach the API upload policy: it grants permissions only for source uploads and cannot write extraction artifacts.
+
 ## Run a worker
 
 ```powershell
